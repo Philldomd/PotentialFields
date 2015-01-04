@@ -1,6 +1,10 @@
 #pragma once
 
 #include "GraphicEngine.h"
+#include "Camera.h"
+#include "Model.h"
+#include "ShaderModel.h"
+
 
 const bool FULL_SCREEN = false;
 const bool VSYNC_ENABLED = true;
@@ -14,7 +18,7 @@ public:
 	Graphic(const Graphic&);
 	~Graphic();
 
-	bool Initilize(int, int, HWND);
+	bool Initialize(int, int, HWND);
 	void Shutdown();
 	bool Frame();
 
@@ -24,5 +28,8 @@ private:
 private:
 
 	GraphicEngine* m_DirectX;
+	Camera* m_Camera;
+	Model* m_Model;
+	ShaderModel* m_ShaderModel;
 };
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
 
 #include <dxgi.h>
-#include <d3dcommon.h>
 #include <d3d11.h>
 #include <DirectXMath.h>
 
@@ -16,17 +16,20 @@ public:
 	GraphicEngine(const GraphicEngine&);
 	~GraphicEngine();
 
-	bool Initilize(int, int, bool, HWND, bool, float, float);
+	bool Initialize(int, int, bool, HWND, bool, float, float);
 	void Shutdown();
+
 	void BeginScene(float, float, float, float);
 	void EndScene();
 
 	ID3D11Device* GetDevice();
 	ID3D11DeviceContext* GetDeviceContext();
 
-	void GetProjectionMatrix(XMFLOAT4X4);
-	void GetWorldMatrix(XMFLOAT4X4);
-	void GetOrthoMatrix(XMFLOAT4X4);
+	void GetProjectionMatrix(XMFLOAT4X4&);
+	void GetWorldMatrix(XMFLOAT4X4&);
+	void GetOrthoMatrix(XMFLOAT4X4&);
+
+	void GetVideoCardInfo(char*, int&);
 
 private:
 	bool m_vsync_enabled;

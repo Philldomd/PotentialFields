@@ -21,7 +21,7 @@ GraphicEngine::~GraphicEngine()
 {
 }
 
-bool GraphicEngine::Initilize(int screenWidth, int screenHeight, bool vsync, HWND hwnd, bool fullscreen, 
+bool GraphicEngine::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hwnd, bool fullscreen, 
 			  float screenDepth, float screenNear)
 {
 	HRESULT result;
@@ -182,7 +182,277 @@ bool GraphicEngine::Initilize(int screenWidth, int screenHeight, bool vsync, HWN
 		return false;
 	}
 
-	//GET POINTER TO BACKBUFFER!!!
+	//Get pointer to backbuffer
+	result = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPointer);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	result = m_device->CreateRenderTargetView(backBufferPointer, NULL, &m_renderTargetView);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	backBufferPointer->Release();
+	backBufferPointer = 0;
+
+	// Initialize the description of the depth buffer.
+	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
+
+	// Set up the description of the depth buffer.
+	depthBufferDesc.Width = screenWidth;
+	depthBufferDesc.Height = screenHeight;
+	depthBufferDesc.MipLevels = 1;
+	depthBufferDesc.ArraySize = 1;
+	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthBufferDesc.SampleDesc.Count = 1;
+	depthBufferDesc.SampleDesc.Quality = 0;
+	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthBufferDesc.CPUAccessFlags = 0;
+	depthBufferDesc.MiscFlags = 0;
+
+	result = m_device->CreateTexture2D(&depthBufferDesc, NULL, &m_depthStencilBuffer);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	// Initialize the description of the stencil state.
+	ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
+
+	// Set up the description of the stencil state.
+	depthStencilDesc.DepthEnable = true;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	depthStencilDesc.StencilEnable = true;
+	depthStencilDesc.StencilReadMask = 0xFF;
+	depthStencilDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing.
+	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing.
+	depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Create the depth stencil state.
+	result = m_device->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilState);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
+
+	// Initailze the depth stencil view.
+	ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
+
+	// Set up the depth stencil view description.
+	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.Texture2D.MipSlice = 0;
+
+	// Create the depth stencil view.
+	result = m_device->CreateDepthStencilView(m_depthStencilBuffer, &depthStencilViewDesc, &m_depthStencilView);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	// Bind the render target view and depth stencil buffer to the output render pipeline.
+	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+
+	// Setup the raster description which will determine how and what polygons will be drawn.
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.CullMode = D3D11_CULL_BACK;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	// Create the rasterizer state from the description we just filled out.
+	result = m_device->CreateRasterizerState(&rasterDesc, &m_rasterState);
+	if(FAILED(result))
+	{
+		return false;
+	}
+
+	// Now set the rasterizer state.
+	m_deviceContext->RSSetState(m_rasterState);
+
+	// Setup the viewport for rendering.
+	viewPort.Width = (float)screenWidth;
+	viewPort.Height = (float)screenHeight;
+	viewPort.MinDepth = 0.0f;
+	viewPort.MaxDepth = 1.0f;
+	viewPort.TopLeftX = 0.0f;
+	viewPort.TopLeftY = 0.0f;
+
+	// Create the viewport.
+	m_deviceContext->RSSetViewports(1, &viewPort);
+
+	// Setup the projection matrix.
+	FOV = (float)XM_PI / 4.0f;
+	screenAspect = (float)screenWidth / (float)screenHeight;
+
+	// Create the projection matrix for 3D rendering.
+	XMMATRIX projectionMatrix;
+	projectionMatrix = XMMatrixPerspectiveFovLH(FOV, screenAspect, screenNear, screenDepth);
+	XMStoreFloat4x4(&m_projectionMatrix, projectionMatrix);
+
+	// Initialize the world matrix to the identity matrix.
+	XMMATRIX worldMatrix;
+	worldMatrix = XMMatrixIdentity();
+	XMStoreFloat4x4(&m_worldMatrix, worldMatrix);
+
+	// Create an orthographic projection matrix for 2D rendering.
+	XMMATRIX orthoMatrix;
+	orthoMatrix = XMMatrixOrthographicLH((float)screenWidth, (float)screenHeight, screenNear, screenDepth);
+	XMStoreFloat4x4(&m_orthoMatrix, orthoMatrix);
+
+	return true;
+}
+
+void GraphicEngine::Shutdown()
+{
+	//Before shuting down
+	if(m_swapChain)
+	{
+		m_swapChain->SetFullscreenState(false, NULL);
+	}
+
+	if(m_rasterState)
+	{
+		m_rasterState->Release();
+		m_rasterState = 0;
+	}
+
+	if(m_depthStencilView)
+	{
+		m_depthStencilView->Release();
+		m_depthStencilView = 0;
+	}
+
+	if(m_depthStencilState)
+	{
+		m_depthStencilState->Release();
+		m_depthStencilState = 0;
+	}
+
+	if(m_depthStencilBuffer)
+	{
+		m_depthStencilBuffer->Release();
+		m_depthStencilBuffer = 0;
+	}
+
+	if(m_renderTargetView)
+	{
+		m_renderTargetView->Release();
+		m_renderTargetView = 0;
+	}
+
+	if(m_deviceContext)
+	{
+		m_deviceContext->Release();
+		m_deviceContext = 0;
+	}
+
+	if(m_device)
+	{
+		m_device->Release();
+		m_device = 0;
+	}
+
+	if(m_swapChain)
+	{
+		m_swapChain->Release();
+		m_swapChain = 0;
+	}
+
+	return;
+}
+
+void GraphicEngine::BeginScene(float red, float green, float blue, float alpha)
+{
+	float color[4];
+
+	color[0] = red;
+	color[1] = green;
+	color[2] = blue;
+	color[3]= alpha;
+
+	m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
+
+	m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	return;
+}
+
+void GraphicEngine::EndScene()
+{
+	//Present the back buffer to the screen since rendering is complete.
+	if(m_vsync_enabled)
+	{
+		//Lock to screen refresh rate.
+		m_swapChain->Present(1, 0);
+	}
+	else
+	{
+		//Free refresh rate.
+		m_swapChain->Present(0, 0);
+	}
+
+	return;
+}
+
+ID3D11Device* GraphicEngine::GetDevice()
+{
+	return m_device;
+}
+
+ID3D11DeviceContext* GraphicEngine::GetDeviceContext()
+{
+	return m_deviceContext;
+}
+
+void GraphicEngine::GetProjectionMatrix(XMFLOAT4X4& projectionMatrix)
+{
+	projectionMatrix = m_projectionMatrix;
+	return;
+}
 
 
+void GraphicEngine::GetWorldMatrix(XMFLOAT4X4& worldMatrix)
+{
+	worldMatrix = m_worldMatrix;
+	return;
+}
+
+
+void GraphicEngine::GetOrthoMatrix(XMFLOAT4X4& orthoMatrix)
+{
+	orthoMatrix = m_orthoMatrix;
+	return;
+}
+
+
+void GraphicEngine::GetVideoCardInfo(char* cardName, int& memory)
+{
+	strcpy_s(cardName, 128, m_videoCardDescription);
+	memory = m_videoCardMemory;
+
+	return;
 }

@@ -1,5 +1,8 @@
 
+#include "Graphics.h"
+
 #include <windows.h>
+
 
 
 
@@ -17,6 +20,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	if (FAILED(InitWindow(hInstance, nCmdShow)))
 		return 0;
 
+	Graphic graphic;
+	if(!graphic.Initialize(1024, 768, g_hWnd))
+		return 0;
+
+	
 	__int64 cntsPerSec = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&cntsPerSec);
 	float secsPerCnt = 1.0f / (float)cntsPerSec;
@@ -37,10 +45,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			QueryPerformanceCounter((LARGE_INTEGER*)&currTimeStamp);
 			float dt = (currTimeStamp - prevTimeStamp) * secsPerCnt;
 			//render
-
+			graphic.Frame();
 			prevTimeStamp = currTimeStamp;
 		}
 	}
+	graphic.Shutdown();
 	return (int)msg.wParam;
 }
 
@@ -61,7 +70,7 @@ HRESULT InitWindow(HINSTANCE hInst, int nCmdShow)
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = "PotentialField";
+	wcex.lpszClassName = L"PotentialField";
 	wcex.hIconSm = 0;
 	if (!RegisterClassEx(&wcex))
 		return E_FAIL;
@@ -70,8 +79,8 @@ HRESULT InitWindow(HINSTANCE hInst, int nCmdShow)
 	RECT rc = { 0, 0, 1024, 800};
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 	if (!(g_hWnd = CreateWindow(
-		"PotentialField",
-		"Potential Field - Test Engine",
+		L"PotentialField",
+		L"Potential Field - Test Engine",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
