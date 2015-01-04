@@ -21,7 +21,7 @@ bool ShaderModel::Initialize(ID3D11Device* device, HWND hwnd)
 	bool result;
 
 	// Initilize the vertex and pixel shader.
-	result = InitializeShader(device, hwnd, L"../PotentialField/Model.vs", L"../PotentialField/Model.ps");
+	result = InitializeShader(device, hwnd, L"Model.vs", L"Model.gs", L"Model.ps");
 	if(!result)
 	{
 		return false;
@@ -54,12 +54,13 @@ bool ShaderModel::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMF
 	return true;
 }
 
-bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFilename, WCHAR* psFilename)
+bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFilename, WCHAR* gsFilename ,WCHAR* psFilename)
 {
 	HRESULT result;
 	ID3DBlob* errorMessage;
 	ID3DBlob* vertexShaderBuffer;
 	ID3DBlob* pixelShaderBuffer;
+	ID3DBlob* geometryShaderBuffer;
 	D3D11_INPUT_ELEMENT_DESC polygonLayout[2];
 	unsigned int numElements;
 	D3D11_BUFFER_DESC matrixBufferDesc;
@@ -69,6 +70,7 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 	errorMessage = 0;
 	vertexShaderBuffer = 0;
 	pixelShaderBuffer = 0;
+	geometryShaderBuffer = 0;
 
 	// Compile the vertex shader code.
 	result = D3DCompileFromFile(vsFilename, NULL, NULL, "ColorVertexShader", "vs_5_0", D3DCOMPILE_ENABLE_STRICTNESS, 0, 
@@ -89,7 +91,26 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 		return false;
 	}
 
-	// Compile the vertex shader code.
+	// Compile the geometry shader code.
+	result = D3DCompileFromFile(gsFilename, NULL, NULL, "main", "gs_5_0", D3DCOMPILE_ENABLE_STRICTNESS, 0,
+						&geometryShaderBuffer, &errorMessage);
+	if (FAILED(result))
+	{
+		// If the shader failed to compile it should have writen something to the error message.
+		if (errorMessage)
+		{
+			OutputShaderErrorMessage(errorMessage, hwnd, gsFilename);
+		}
+		// If there was nothing in the error message then it simply could not find the shader file itself.
+		else
+		{
+			MessageBox(hwnd, gsFilename, L"Missing Shader File", MB_OK);
+		}
+
+		return false;
+	}
+
+	// Compile the pixel shader code.
 	result = D3DCompileFromFile(psFilename, NULL, NULL, "ColorPixelShader", "ps_5_0", D3DCOMPILE_ENABLE_STRICTNESS, 0, 
 				       &pixelShaderBuffer, &errorMessage);
 	if(FAILED(result))
@@ -97,12 +118,12 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 		// If the shader failed to compile it should have writen something to the error message.
 		if(errorMessage)
 		{
-			OutputShaderErrorMessage(errorMessage, hwnd, vsFilename);
+			OutputShaderErrorMessage(errorMessage, hwnd, psFilename);
 		}
 		// If there was nothing in the error message then it simply could not find the shader file itself.
 		else
 		{
-			MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
+			MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
 		}
 
 		return false;
@@ -111,6 +132,13 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 	// Create the vertex shader from the buffer.
 	result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL, &m_vertexShader);
 	if(FAILED(result))
+	{
+		return false;
+	}
+
+	// Create the vertex shader from the buffer.
+	result = device->CreateGeometryShader(geometryShaderBuffer->GetBufferPointer(), geometryShaderBuffer->GetBufferSize(), NULL, &m_geometryShader);
+	if (FAILED(result))
 	{
 		return false;
 	}
@@ -154,6 +182,9 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 	// Release the vertex shader buffer and pixel shader buffer since they are no longer needed.
 	vertexShaderBuffer->Release();
 	vertexShaderBuffer = 0;
+
+	geometryShaderBuffer->Release();
+	geometryShaderBuffer = 0;
 
 	pixelShaderBuffer->Release();
 	pixelShaderBuffer = 0;
@@ -291,17 +322,18 @@ bool ShaderModel::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMFLOA
 	return true;
 }
 
-void ShaderModel::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
+void ShaderModel::RenderShader(ID3D11DeviceContext* deviceContext, int entityCount)
 {
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(m_layout);
 
 	// Set the vertex and pixel shaders that will be used to render this triangle.
 	deviceContext->VSSetShader(m_vertexShader, NULL, 0);
+	deviceContext->GSSetShader(m_geometryShader, NULL, 0);
 	deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
 	// Render the triangle.
-	deviceContext->DrawIndexed(indexCount, 0, 0);
+	deviceContext->Draw(entityCount, 0);
 
 	return;
 }
