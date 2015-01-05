@@ -81,7 +81,7 @@ bool Model::InitilizeBuffers(ID3D11Device* device)
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	vertexBufferDesc.ByteWidth = sizeof(VertexType) * m_vertexCount;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
@@ -115,7 +115,31 @@ void Model::ShutdownBuffers()
 
 	return;
 }
+void Model::UpdateEntities(ID3D11DeviceContext* deviceContext)
+{
+	D3D11_MAPPED_SUBRESOURCE updateData;
+	ZeroMemory(&updateData, sizeof(updateData));
 
+	VertexType* vertices = new VertexType[m_vertexCount];
+
+	//ta positioner från nån datastruktur som innehåller dom flyttade/ flytter på dom
+	vertices[0].position = XMFLOAT3(250.0f, 400.0f, 0.0f);  // Bottom left.
+	vertices[0].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+
+	vertices[1].position = XMFLOAT3(1000.0f, 700.0f, 0.0f);  // Top middle.
+	vertices[1].color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+
+	vertices[2].position = XMFLOAT3(1.0f, 500.0f, 0.0f);  // Bottom right.
+	vertices[2].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+
+	vertices[3].position = XMFLOAT3(1.0f, 1.0f, 0.0f);  // Top middle.
+	vertices[3].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+
+	if (!FAILED(deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &updateData)))
+		memcpy(updateData.pData, (void**)&vertices[0], 4 * sizeof(VertexType));
+
+	deviceContext->Unmap(m_vertexBuffer, 0);
+}
 void Model::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
 	unsigned int stride;

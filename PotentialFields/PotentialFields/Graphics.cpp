@@ -145,6 +145,7 @@ bool Graphic::Render()
 	m_DirectX->GetProjectionMatrix(projectionMatrix);
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+	m_Model->UpdateEntities(m_DirectX->GetDeviceContext());
 	m_Model->Render(m_DirectX->GetDeviceContext());
 
 	// Render the model using the color shader.

@@ -24,6 +24,9 @@ public:
 
 	int GetEntityCount();
 
+	//not sure if this should be here
+	void UpdateEntities(ID3D11DeviceContext*);
+
 private:
 	bool InitilizeBuffers(ID3D11Device*);
 	void ShutdownBuffers();
