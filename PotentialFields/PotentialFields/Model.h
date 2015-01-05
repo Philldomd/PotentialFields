@@ -1,7 +1,10 @@
 #pragma once
 
+#include "Entity.h"
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include <vector>
+
 
 using namespace DirectX;
 
@@ -13,6 +16,7 @@ private:
 		XMFLOAT3 position;
 		XMFLOAT4 color;
 	};
+	std::vector<Entity*> entities;
 public:
 	Model();
 	Model(const Model&);

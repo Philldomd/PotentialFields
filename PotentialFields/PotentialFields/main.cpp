@@ -2,7 +2,7 @@
 #include "Graphics.h"
 
 #include <windows.h>
-
+#include <cstdlib>
 
 
 
@@ -24,7 +24,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	if(!graphic.Initialize(1024, 768, g_hWnd))
 		return 0;
 
-	
+	srand(10);
+
 	__int64 cntsPerSec = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&cntsPerSec);
 	float secsPerCnt = 1.0f / (float)cntsPerSec;

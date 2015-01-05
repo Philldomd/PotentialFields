@@ -3,7 +3,12 @@
 
 Model::Model(void)
 {
+	int i;
 	m_vertexCount = 0;
+	for (i = 0; i < 100; i++)
+	{
+		entities.push_back(new Entity(XMFLOAT2(768, 0)));
+	}
 }
 
 Model::Model(const Model& other)
@@ -56,7 +61,7 @@ bool Model::InitilizeBuffers(ID3D11Device* device)
 	D3D11_SUBRESOURCE_DATA vertexData;
 	HRESULT result;
 
-	m_vertexCount = 4;
+	m_vertexCount = entities.size();
 
 	vertices = new VertexType[m_vertexCount];
 	if(!vertices)
@@ -65,17 +70,15 @@ bool Model::InitilizeBuffers(ID3D11Device* device)
 	}
 
 	// Load the vertex array with data.
-	vertices[0].position = XMFLOAT3(250.0f, 400.0f, 0.0f);  // Bottom left.
-	vertices[0].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-
-	vertices[1].position = XMFLOAT3(1000.0f, 700.0f, 0.0f);  // Top middle.
-	vertices[1].color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-
-	vertices[2].position = XMFLOAT3(1.0f, 500.0f, 0.0f);  // Bottom right.
-	vertices[2].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-
-	vertices[3].position = XMFLOAT3(1.0f, 1.0f, 0.0f);  // Top middle.
-	vertices[3].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	XMFLOAT2 pos;
+	XMFLOAT3 color;
+	for (int i = 0; i < m_vertexCount; i++)
+	{
+		pos = entities.at(i)->getPosition();
+		color = entities.at(i)->getColor();
+		vertices[i].position = XMFLOAT3(pos.x, pos.y, 0.0f);  // Bottom left.
+		vertices[i].color = XMFLOAT4(color.x, color.y,color.z,1.0f);
+	}
 
 	// Set up the description of the static vertex buffer.
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -117,28 +120,35 @@ void Model::ShutdownBuffers()
 }
 void Model::UpdateEntities(ID3D11DeviceContext* deviceContext)
 {
+	//borde ha en dt också egentligen
 	D3D11_MAPPED_SUBRESOURCE updateData;
 	ZeroMemory(&updateData, sizeof(updateData));
 
 	VertexType* vertices = new VertexType[m_vertexCount];
 
 	//ta positioner från nån datastruktur som innehåller dom flyttade/ flytter på dom
-	vertices[0].position = XMFLOAT3(250.0f, 400.0f, 0.0f);  // Bottom left.
-	vertices[0].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+	XMFLOAT2 pos;
+	XMVECTOR tpos;
+	XMFLOAT3 color;
+	for (int i = 0; i < m_vertexCount; i++)
+	{
+		tpos = XMLoadFloat2( &entities.at(i)->getPosition());
+		tpos += XMLoadFloat2(&entities.at(i)->getVelocity())* 1.f;
+		XMStoreFloat2(&pos, tpos);
 
-	vertices[1].position = XMFLOAT3(1000.0f, 700.0f, 0.0f);  // Top middle.
-	vertices[1].color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-
-	vertices[2].position = XMFLOAT3(1.0f, 500.0f, 0.0f);  // Bottom right.
-	vertices[2].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-
-	vertices[3].position = XMFLOAT3(1.0f, 1.0f, 0.0f);  // Top middle.
-	vertices[3].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
+		entities.at(i)->setPosition(pos);
+		color = entities.at(i)->getColor();
+		vertices[i].position = XMFLOAT3(pos.x, pos.y, 0.0f);  // Bottom left.
+		vertices[i].color = XMFLOAT4(color.x, color.y, color.z, 1.0f);
+	}
 
 	if (!FAILED(deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &updateData)))
-		memcpy(updateData.pData, (void**)&vertices[0], 4 * sizeof(VertexType));
+		memcpy(updateData.pData, (void**)&vertices[0], m_vertexCount * sizeof(VertexType));
 
 	deviceContext->Unmap(m_vertexBuffer, 0);
+
+	delete[] vertices;
+	vertices = 0;
 }
 void Model::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
