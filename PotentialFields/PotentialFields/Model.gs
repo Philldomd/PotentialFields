@@ -1,3 +1,8 @@
+cbuffer EntitySize : register(b0)
+{
+	float2 dim;
+};
+
 struct GeometryInputType
 {
 	float4 pos : POSITION;
@@ -11,7 +16,6 @@ struct PixelInputType
 };
 
 static const float2 resolution = float2(1024.0, 768.0);
-static const float2 dim = float2(10,10);
 
 [maxvertexcount(4)]
 void main(point GeometryInputType input[1] : SV_POSITION, inout TriangleStream<PixelInputType> triStream)

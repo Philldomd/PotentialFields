@@ -2,11 +2,14 @@
 
 #include<cstdlib>
 
-Entity::Entity(XMFLOAT2 HILO)
+Entity::Entity(XMFLOAT2 HILO, XMFLOAT2 _size)
 {
+	
 	position = XMFLOAT2(randomFunc(HILO.y, HILO.x), randomFunc(HILO.y, HILO.x));
 	velocity = XMFLOAT2(randomFunc(-2, 2), randomFunc(-2, 2));
-	color = XMFLOAT3(0.4, 0.4, 0.4);
+	size = _size;
+	color = XMFLOAT3(0.4f, 0.4f, 0.4f);
+	box = AABB(position, XMFLOAT2(position.x + size.x, position.y + size.y));
 }
 
 Entity::~Entity()
@@ -33,4 +36,12 @@ float Entity::randomFunc(float LO, float HI)
 {
 	float r3 = LO + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HI - LO)));
 	return r3;
+}
+
+void Entity::setBoxPosition(XMFLOAT2 _position)
+{
+	XMFLOAT2 max;
+	max.x = _position.x + size.x;
+	max.y = _position.y + size.y;
+	box.setMinMax(_position, max);
 }

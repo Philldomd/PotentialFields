@@ -6,6 +6,7 @@ ShaderModel::ShaderModel(void)
 	m_pixelShader = 0;
 	m_layout = 0;
 	m_matrixBuffer = 0;
+	m_geometryEntititySizeBuffer = 0;
 }
 
 ShaderModel::ShaderModel(const ShaderModel& other)
@@ -38,12 +39,12 @@ void ShaderModel::Shutdown()
 }
 
 bool ShaderModel::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMFLOAT4X4 worldMatrix,
-						 XMFLOAT4X4 viewMatrix, XMFLOAT4X4 projectionMatrix)
+	XMFLOAT4X4 viewMatrix, XMFLOAT4X4 projectionMatrix, XMFLOAT2 entitySize)
 {
 	bool result;
 
 	// Set shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, entitySize);
 	if(!result)
 	{
 		return false;
@@ -204,6 +205,14 @@ bool ShaderModel::InitializeShader(ID3D11Device* device, HWND hwnd, WCHAR* vsFil
 		return false;
 	}
 
+	matrixBufferDesc.ByteWidth = sizeof(GeometryEntitySize);
+	
+	result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_geometryEntititySizeBuffer);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -214,6 +223,12 @@ void ShaderModel::ShutdownShader()
 	{
 		m_matrixBuffer->Release();
 		m_matrixBuffer = 0;
+	}
+
+	if (m_geometryEntititySizeBuffer)
+	{
+		m_geometryEntititySizeBuffer->Release();
+		m_geometryEntititySizeBuffer = 0;
 	}
 
 	// Release the layout.
@@ -275,13 +290,14 @@ void ShaderModel::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, 
 	return;
 }
 
-bool ShaderModel::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMFLOAT4X4 worldMatrix, 
-					   XMFLOAT4X4 viewMatrix, XMFLOAT4X4 projectionMatrix)
+bool ShaderModel::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMFLOAT4X4 worldMatrix,
+	XMFLOAT4X4 viewMatrix, XMFLOAT4X4 projectionMatrix, XMFLOAT2 entitySize)
 {
 	HRESULT result;
 	XMMATRIX world, view, projection;
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
+	GeometryEntitySize* dataSizePtr;
 	unsigned int bufferNumber;
 
 	// Transpose the matrices to prepare them for the shader.
@@ -318,6 +334,28 @@ bool ShaderModel::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMFLOA
 
 	// Finanly set the constant buffer in the vertex shader with the updated values.
 	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
+
+	// Lock the constant buffer so it can be written to.
+	result = deviceContext->Map(m_geometryEntititySizeBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	// Get a pointer to the data in the constant buffer.
+	dataSizePtr = (GeometryEntitySize*)mappedResource.pData;
+
+	// Copy the matrices into the constant buffer.
+	dataSizePtr->dim = entitySize;
+
+	// Unlock the constant buffer.
+	deviceContext->Unmap(m_geometryEntititySizeBuffer, 0);
+
+	// Set the position of the constant buffer in the vertex shader.
+	bufferNumber = 0;
+
+	// Finanly set the constant buffer in the vertex shader with the updated values.
+	deviceContext->GSSetConstantBuffers(bufferNumber, 1, &m_geometryEntititySizeBuffer);
 
 	return true;
 }

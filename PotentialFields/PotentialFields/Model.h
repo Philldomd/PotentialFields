@@ -1,12 +1,9 @@
 #pragma once
 
 #include "Entity.h"
-#include <d3d11.h>
-#include <DirectXMath.h>
+#include "GraphicEngine.h"
 #include <vector>
 
-
-using namespace DirectX;
 
 class Model
 {
@@ -27,17 +24,20 @@ public:
 	void Render(ID3D11DeviceContext*);
 
 	int GetEntityCount();
+	Entity* GetEntityAt(unsigned int);
+	XMFLOAT2 GetEntitySize();
 
 	//not sure if this should be here
 	void UpdateEntities(ID3D11DeviceContext*);
 
 private:
-	bool InitilizeBuffers(ID3D11Device*);
+	bool InitializeBuffers(ID3D11Device*);
 	void ShutdownBuffers();
 	void RenderBuffers(ID3D11DeviceContext*);
 
 private:
 	ID3D11Buffer *m_vertexBuffer;
 	int m_vertexCount;
+	XMFLOAT2 m_modelSize;
 };
 

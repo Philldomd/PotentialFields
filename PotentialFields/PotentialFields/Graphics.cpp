@@ -6,6 +6,7 @@ Graphic::Graphic()
 	m_Camera = 0;
 	m_Model = 0;
 	m_ShaderModel = 0;
+	m_DecreaseCounter = 0;
 }
 
 Graphic::Graphic(const Graphic& other)
@@ -76,6 +77,18 @@ bool Graphic::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
+	m_Grid = new Grid();
+	if (!m_Grid)
+	{
+		return false;
+	}
+	if (!m_Grid->Initialize(m_DirectX->GetDevice()))
+	{
+		MessageBox(hwnd, L"Could not initialize the grid object.", L"Error", MB_OK);
+		return false;
+	}
+	
+
 	return true;
 }
 
@@ -110,15 +123,43 @@ void Graphic::Shutdown()
 		m_DirectX = 0;
 	}
 
+	if (m_Grid)
+	{
+		m_Grid->Shutdown();
+		delete m_Grid;
+		m_Grid = 0;
+	}
+
 	return;
 }
 
-bool Graphic::Frame()
+bool Graphic::Frame(bool toggle, float dt)
 {
 	bool result;
 
+	
+	for (int i = 0; i < m_Grid->GetCellCount(); i++)
+	{
+		m_Grid->DecreaseChargeAt(i, dt);
+	}
+	for (int i = 0; i < m_Model->GetEntityCount(); i++)
+	{
+		for (int j = 0; j < m_Grid->GetCellCount(); j++)
+		{
+			if (intersect(m_Model->GetEntityAt(i)->getAABB(), m_Grid->GetGridCell(j)->box))
+			{
+
+				m_Grid->AddChargeAt(j);
+			}
+		}
+	}
+
+	
+
+	m_Model->UpdateEntities(m_DirectX->GetDeviceContext());
+	m_Grid->Update(m_DirectX->GetDeviceContext());
 	//Render the graphic scene
-	result = Render();
+	result = Render(toggle);
 	if(!result)
 	{
 		return false;
@@ -127,11 +168,13 @@ bool Graphic::Frame()
 	return true;
 }
 
-bool Graphic::Render()
+bool Graphic::Render(bool toggle)
 {
 	XMFLOAT4X4 viewMatrix, projectionMatrix, worldMatrix;
 	bool result;
-
+	ID3D11DeviceContext* deviceContext = m_DirectX->GetDeviceContext();
+	unsigned int count = 0;
+	XMFLOAT2 dim = XMFLOAT2(0.0f,0.0f);
 
 	// Clear the buffers to begin the scene.
 	m_DirectX->BeginScene(0.0f, 0.0f, 0.0f, 1.0f);
@@ -144,12 +187,21 @@ bool Graphic::Render()
 	m_DirectX->GetWorldMatrix(worldMatrix);
 	m_DirectX->GetProjectionMatrix(projectionMatrix);
 
-	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
-	m_Model->UpdateEntities(m_DirectX->GetDeviceContext());
-	m_Model->Render(m_DirectX->GetDeviceContext());
-
+	if (toggle)
+	{
+		// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+		m_Model->Render(deviceContext);
+		count = m_Model->GetEntityCount();
+		dim = m_Model->GetEntitySize();
+	}
+	else
+	{
+		m_Grid->Render(deviceContext);
+		count = m_Grid->GetCellCount();
+		dim = m_Grid->GetGridDim();
+	}
 	// Render the model using the color shader.
-	result = m_ShaderModel->Render(m_DirectX->GetDeviceContext(), m_Model->GetEntityCount(), worldMatrix, viewMatrix, projectionMatrix);
+	result = m_ShaderModel->Render(deviceContext, count, worldMatrix, viewMatrix, projectionMatrix, dim);
 	if(!result)
 	{
 		return false;

@@ -1,0 +1,7 @@
+flera enheter väger in på en riktning som sparas i fältet/cellen
+
+denna riktning kan påverkas av att en eller flera entiteter åker över den i en riktning som skiljer sig från den sparade
+
+Den sparade har en styrka som trappas ner när någon går emot den eller stärks då något åker i samma riktning. 
+
+kan trappas ner med tiden men det tar mycket längre tid.

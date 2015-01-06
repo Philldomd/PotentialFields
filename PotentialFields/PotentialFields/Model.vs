@@ -1,5 +1,5 @@
 #pragma pack_matrix(row_major)
-cbuffer MatrixBuffer
+cbuffer MatrixBuffer : register(b0)
 {
 	matrix worldMatrix;
 	matrix viewMatrix;

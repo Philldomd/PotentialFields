@@ -4,11 +4,13 @@
 Model::Model(void)
 {
 	int i;
+	m_modelSize = XMFLOAT2(5, 5);
 	m_vertexCount = 0;
-	for (i = 0; i < 100; i++)
+	for (i = 0; i < 10; i++)
 	{
-		entities.push_back(new Entity(XMFLOAT2(768, 0)));
+		entities.push_back(new Entity(XMFLOAT2(768, 0), m_modelSize));
 	}
+	
 }
 
 Model::Model(const Model& other)
@@ -24,7 +26,7 @@ bool Model::Initialize(ID3D11Device* device)
 	bool result;
 
 	// Initialize the vertex and index buffer that hold the geometry.
-	result = InitilizeBuffers(device);
+	result = InitializeBuffers(device);
 	if(!result)
 	{
 		return false;
@@ -54,7 +56,17 @@ int Model::GetEntityCount()
 	return m_vertexCount;
 }
 
-bool Model::InitilizeBuffers(ID3D11Device* device)
+XMFLOAT2 Model::GetEntitySize()
+{
+	return m_modelSize;
+}
+
+Entity* Model::GetEntityAt(unsigned int i)
+{
+	return entities.at(i);
+}
+
+bool Model::InitializeBuffers(ID3D11Device* device)
 {
 	VertexType* vertices;
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -140,6 +152,7 @@ void Model::UpdateEntities(ID3D11DeviceContext* deviceContext)
 		color = entities.at(i)->getColor();
 		vertices[i].position = XMFLOAT3(pos.x, pos.y, 0.0f);  // Bottom left.
 		vertices[i].color = XMFLOAT4(color.x, color.y, color.z, 1.0f);
+		entities.at(i)->setBoxPosition(pos);
 	}
 
 	if (!FAILED(deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &updateData)))

@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "ShaderModel.h"
+#include "Grid.h"
 
 
 const bool FULL_SCREEN = false;
@@ -20,10 +21,10 @@ public:
 
 	bool Initialize(int, int, HWND);
 	void Shutdown();
-	bool Frame();
+	bool Frame(bool, float);
 
 private:
-	bool Render();
+	bool Render(bool);
 
 private:
 
@@ -31,5 +32,7 @@ private:
 	Camera* m_Camera;
 	Model* m_Model;
 	ShaderModel* m_ShaderModel;
+	Grid* m_Grid;
+	float m_DecreaseCounter;
 };
 

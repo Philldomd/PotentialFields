@@ -10,6 +10,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HWND g_hWnd;
 HINSTANCE g_hInstance;
+bool toggle, prevToggle;
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing
 // loop. Idle time is used to render the scene.
@@ -24,7 +25,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	if(!graphic.Initialize(1024, 768, g_hWnd))
 		return 0;
 
-	srand(10);
+
+
+	toggle = false;
+	prevToggle = true;
 
 	__int64 cntsPerSec = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&cntsPerSec);
@@ -46,7 +50,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			QueryPerformanceCounter((LARGE_INTEGER*)&currTimeStamp);
 			float dt = (currTimeStamp - prevTimeStamp) * secsPerCnt;
 			//render
-			graphic.Frame();
+			graphic.Frame(toggle, dt);
 			prevTimeStamp = currTimeStamp;
 		}
 	}
@@ -119,6 +123,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case VK_ESCAPE:
 			PostQuitMessage(0);
+			break;
+
+		case VK_F2:
+			if (toggle != prevToggle)
+			{
+				toggle = !toggle;
+				prevToggle = !toggle;
+			}
 			break;
 		}
 		break;

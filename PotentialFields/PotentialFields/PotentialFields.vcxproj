@@ -79,6 +79,7 @@
     <ClInclude Include="GraphicEngine.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Grid.h" />
+    <ClInclude Include="AABBCollision.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ShaderModel.h" />
   </ItemGroup>
