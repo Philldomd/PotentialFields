@@ -9,6 +9,13 @@
 
 using namespace DirectX;
 
+enum class VIEWS
+{
+	FIELD,
+	NORMAL,
+	VEL
+};
+
 class GraphicEngine
 {
 public:

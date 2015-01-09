@@ -1,5 +1,4 @@
 #include "Graphics.h"
-
 Graphic::Graphic()
 {
 	m_DirectX = 0;
@@ -133,32 +132,64 @@ void Graphic::Shutdown()
 	return;
 }
 
-bool Graphic::Frame(bool toggle, float dt)
+bool Graphic::Frame(VIEWS toggle, float dt, bool pause)
 {
 	bool result;
 
-	
-	for (int i = 0; i < m_Grid->GetCellCount(); i++)
+	if (!pause)
 	{
-		m_Grid->DecreaseChargeAt(i, dt);
-	}
-	for (int i = 0; i < m_Model->GetEntityCount(); i++)
-	{
-		for (int j = 0; j < m_Grid->GetCellCount(); j++)
+		for (int i = 0; i < m_Grid->GetCellCount(); i++)
 		{
-			if (intersect(m_Model->GetEntityAt(i)->getAABB(), m_Grid->GetGridCell(j)->box))
+			m_Grid->DecreaseChargeAt(i, dt);
+		}
+		for (int i = 0; i < m_Model->GetEntityCount(); i++)
+		{
+			for (int j = 0; j < m_Grid->GetCellCount(); j++)
 			{
+				if (intersect(m_Model->GetEntityAt(i)->getAABB(), m_Grid->GetGridCell(j)->box))
+				{
+					m_Grid->AddChargeAt(j);
+					XMFLOAT2 vel = m_Model->GetEntityAt(i)->getVelocity();
+					XMVECTOR lvel = XMLoadFloat2(&m_Grid->GetGridCell(j)->velocity);
 
-				m_Grid->AddChargeAt(j);
+					XMVECTOR newVel = XMLoadFloat2(&vel);
+					newVel = XMVector2Normalize(newVel);
+					if (!(m_Grid->GetGridCell(j)->velocity.x == 0 && m_Grid->GetGridCell(j)->velocity.y == 0))
+					{
+						lvel = XMVector2Normalize(lvel);
+
+						XMVECTOR a = XMVector2Dot(lvel, newVel);
+						XMFLOAT2 as;
+						XMStoreFloat2(&as, a);
+						float angle = as.x;
+						if (angle > -0.1389 && angle < 0.1389)
+						{
+							m_Model->GetEntityAt(i)->setColor(XMFLOAT3(0.4f, 0.4f, 0.4f));
+						}
+						else if (angle > -0.3 && angle < 0.3)
+						{
+							m_Model->GetEntityAt(i)->setColor(XMFLOAT3(1.0f, 0.8f, 0));
+						}
+						else if (angle > -0.6 && angle < 0.6)
+						{
+							m_Model->GetEntityAt(i)->setColor(XMFLOAT3(1.0f, 0.5f, 0.0f));
+						}
+						
+					
+					}
+
+					m_Grid->GetGridCell(j)->numberOfEntries++;
+					XMStoreFloat2(&m_Grid->GetGridCell(j)->velocity, (lvel + newVel) / (2));
+				}
 			}
 		}
+
+
+
+		m_Model->UpdateEntities(m_DirectX->GetDeviceContext());
+		m_Grid->Update(toggle,m_DirectX->GetDeviceContext());
+		//Render the graphic scene
 	}
-
-	
-
-	m_Model->UpdateEntities(m_DirectX->GetDeviceContext());
-	m_Grid->Update(m_DirectX->GetDeviceContext());
-	//Render the graphic scene
 	result = Render(toggle);
 	if(!result)
 	{
@@ -168,7 +199,7 @@ bool Graphic::Frame(bool toggle, float dt)
 	return true;
 }
 
-bool Graphic::Render(bool toggle)
+bool Graphic::Render(VIEWS toggle)
 {
 	XMFLOAT4X4 viewMatrix, projectionMatrix, worldMatrix;
 	bool result;
@@ -187,19 +218,20 @@ bool Graphic::Render(bool toggle)
 	m_DirectX->GetWorldMatrix(worldMatrix);
 	m_DirectX->GetProjectionMatrix(projectionMatrix);
 
-	if (toggle)
+	if (toggle == VIEWS::NORMAL)
 	{
 		// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
 		m_Model->Render(deviceContext);
 		count = m_Model->GetEntityCount();
 		dim = m_Model->GetEntitySize();
 	}
-	else
+	else if (toggle == VIEWS::FIELD || toggle == VIEWS::VEL)
 	{
 		m_Grid->Render(deviceContext);
 		count = m_Grid->GetCellCount();
 		dim = m_Grid->GetGridDim();
 	}
+
 	// Render the model using the color shader.
 	result = m_ShaderModel->Render(deviceContext, count, worldMatrix, viewMatrix, projectionMatrix, dim);
 	if(!result)

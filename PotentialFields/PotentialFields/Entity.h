@@ -11,6 +11,7 @@ private:
 	float randomFunc(float, float);
 public:
 	Entity(XMFLOAT2, XMFLOAT2);
+	Entity(XMFLOAT2 HILO);
 	XMFLOAT2 getPosition() { return position; }
 	XMFLOAT2 getVelocity() { return velocity; }
 	XMFLOAT3 getColor()	{ return color; }

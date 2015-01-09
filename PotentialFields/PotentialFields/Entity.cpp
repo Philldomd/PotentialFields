@@ -6,8 +6,18 @@ Entity::Entity(XMFLOAT2 HILO, XMFLOAT2 _size)
 {
 	
 	position = XMFLOAT2(randomFunc(HILO.y, HILO.x), randomFunc(HILO.y, HILO.x));
-	velocity = XMFLOAT2(randomFunc(-2, 2), randomFunc(-2, 2));
+	velocity = XMFLOAT2(/*randomFunc(-2, 2)*/1, randomFunc(-0.1,0.1));
 	size = _size;
+	color = XMFLOAT3(0.4f, 0.4f, 0.4f);
+	box = AABB(position, XMFLOAT2(position.x + size.x, position.y + size.y));
+}
+
+Entity::Entity(XMFLOAT2 HILO)
+{
+
+	position = XMFLOAT2(randomFunc(HILO.y, HILO.x), randomFunc(HILO.y, HILO.x));
+	velocity = XMFLOAT2(/*randomFunc(-2, 2)*/0.1, 0.9);
+	size = XMFLOAT2(10,10);
 	color = XMFLOAT3(0.4f, 0.4f, 0.4f);
 	box = AABB(position, XMFLOAT2(position.x + size.x, position.y + size.y));
 }

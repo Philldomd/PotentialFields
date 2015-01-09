@@ -22,9 +22,12 @@ private:
 		XMFLOAT3 position;
 		XMFLOAT3 color;
 		XMFLOAT2 velocity;
+		float numberOfEntries;
 		AABB box;
 		Cell(XMFLOAT3 _position, XMFLOAT3 _color, XMFLOAT2 _dim)
 		{
+			numberOfEntries = 0;
+			velocity = XMFLOAT2(0, 0);
 			position = _position;
 			color = _color;
 			box = AABB(XMFLOAT2(_position.x, _position.y), XMFLOAT2(_position.x + _dim.x, _position.y + _dim.y));
@@ -42,7 +45,7 @@ public:
 	bool Initialize(ID3D11Device*);
 	void Shutdown();
 	void Render(ID3D11DeviceContext*);
-	void Update(ID3D11DeviceContext*);
+	void Update(VIEWS,ID3D11DeviceContext*);
 	unsigned int GetCellCount(){ return m_cellCount; };
 	XMFLOAT2 GetGridDim(){ return m_gridDim; };
 	Cell* GetGridCell(unsigned int);

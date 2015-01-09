@@ -21,10 +21,10 @@ public:
 
 	bool Initialize(int, int, HWND);
 	void Shutdown();
-	bool Frame(bool, float);
+	bool Frame(VIEWS, float,bool);
 
 private:
-	bool Render(bool);
+	bool Render(VIEWS);
 
 private:
 

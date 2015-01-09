@@ -4,13 +4,13 @@
 Model::Model(void)
 {
 	int i;
-	m_modelSize = XMFLOAT2(5, 5);
+	m_modelSize = XMFLOAT2(10, 10);
 	m_vertexCount = 0;
-	for (i = 0; i < 10; i++)
+	for (i = 0; i < 40; i++)
 	{
 		entities.push_back(new Entity(XMFLOAT2(768, 0), m_modelSize));
 	}
-	
+	entities.push_back(new Entity(XMFLOAT2(768, 0)));
 }
 
 Model::Model(const Model& other)

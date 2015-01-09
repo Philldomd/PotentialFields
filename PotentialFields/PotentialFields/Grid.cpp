@@ -111,7 +111,7 @@ void Grid::Render(ID3D11DeviceContext* deviceContext)
 	return;
 }
 
-void Grid::Update(ID3D11DeviceContext* deviceContext)
+void Grid::Update(VIEWS views,ID3D11DeviceContext* deviceContext)
 {
 	//borde ha en dt också egentligen
 	D3D11_MAPPED_SUBRESOURCE updateData;
@@ -122,11 +122,25 @@ void Grid::Update(ID3D11DeviceContext* deviceContext)
 
 	//ta positioner från nån datastruktur som innehåller dom flyttade/ flytter på dom
 	XMFLOAT3 pos;
-	XMFLOAT3 color;
+	XMFLOAT3 color = XMFLOAT3(0,0,0);
 	for (unsigned int i = 0; i < m_cellCount; i++)
 	{
 		pos = m_cells.at(i)->getPosition();
-		color = m_cells.at(i)->getColor();
+		if (views == VIEWS::FIELD)
+			color = m_cells.at(i)->getColor();
+		if (views == VIEWS::VEL)
+		{
+		//	XMVECTOR temp = XMVectorSet(1, 1,1,1);
+		//	
+		//	XMVECTOR vcol = XMLoadFloat2(&m_cells.at(i)->velocity);
+		//	vcol += temp;
+		//	vcol *= 0.5f;
+			color.x = m_cells.at(i)->velocity.x;
+			color.y = m_cells.at(i)->velocity.y;
+		//	XMFLOAT2 tempc;
+		//	XMStoreFloat2(&tempc, vcol);
+		//	color = XMFLOAT3(tempc.x,tempc.y,0); //m_cells.at(i)->velocity;
+		}
 		vertices[i].position = pos;  // Bottom left.
 		vertices[i].color = XMFLOAT4(color.x, color.y, color.z, 1.0f);
 	}
@@ -144,13 +158,16 @@ void Grid::AddChargeAt(unsigned int i)
 {
 	XMFLOAT3* temp = &m_cells.at(i)->color;
 	temp->y += 0.2f;
+	
 	if (temp->y > 1.0f)
-		temp->y = 1.0f;		
+		temp->y = 1.0f;
+
 }
 
 void Grid::DecreaseChargeAt(unsigned int i, float dt)
 {
 	XMFLOAT3* temp = &m_cells.at(i)->color;
+	
 	temp->y -= dt * 0.1f;
 	if (temp->y < 0.0f)
 		temp->y = 0.0f;

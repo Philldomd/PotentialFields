@@ -6,11 +6,12 @@
 
 
 
+VIEWS views = VIEWS::NORMAL;
 HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HWND g_hWnd;
 HINSTANCE g_hInstance;
-bool toggle, prevToggle;
+bool toggle, prevToggle,pause, prevPause;
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing
 // loop. Idle time is used to render the scene.
@@ -26,10 +27,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		return 0;
 
 
-
+	pause = false;
 	toggle = false;
 	prevToggle = true;
-
+	prevPause = true;
 	__int64 cntsPerSec = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&cntsPerSec);
 	float secsPerCnt = 1.0f / (float)cntsPerSec;
@@ -49,8 +50,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			__int64 currTimeStamp = 0;
 			QueryPerformanceCounter((LARGE_INTEGER*)&currTimeStamp);
 			float dt = (currTimeStamp - prevTimeStamp) * secsPerCnt;
+			
 			//render
-			graphic.Frame(toggle, dt);
+			
+			graphic.Frame(views, dt, pause);
 			prevTimeStamp = currTimeStamp;
 		}
 	}
@@ -132,7 +135,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				prevToggle = !toggle;
 			}
 			break;
+		case VK_F3:
+			if (pause != prevPause)
+			{
+				pause = !pause;
+				prevPause = !pause;
+			}
+			break;
+		case VK_F5:
+		{
+					  views = VIEWS::FIELD;
+					  break;
 		}
+		case VK_F6:
+		{
+					  views = VIEWS::NORMAL;
+					  break;
+		}
+		case VK_F7:
+		{
+					  views = VIEWS::VEL;
+					  break;
+		}
+		}
+
+		
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
